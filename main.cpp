@@ -725,27 +725,11 @@ void quitRestart(unsigned char key, int x, int y){
             
         case 27: // ESC - Pausar
             {
-                // Implementar pausa aqui se necessário
+
                 glutPostRedisplay();
             }
             break;
             
-        case 's':
-        case 'S':
-            {
-                // Salvar manualmente
-                std::cout << "Salvamento manual solicitado" << std::endl;
-            }
-            break;
-            
-        case 'l':
-        case 'L':
-            {
-                // Carregar save manual
-                std::cout << "Carregamento manual solicitado" << std::endl;
-                glutPostRedisplay();
-            }
-            break;
     }
 }
 
@@ -814,7 +798,7 @@ int main(int argc, char** argv){
     std::cout << "  Setas: Mover e Rotacionar" << std::endl;
     std::cout << "  Espaco: Drop Rapido" << std::endl;
     std::cout << "  C: Hold (Guardar Peca)" << std::endl;
-    std::cout << "  ESC: Pausar/Menu" << std::endl;
+    //std::cout << "  ESC: Pausar" << std::endl;
     std::cout << "  S: Salvar Manualmente" << std::endl;
     std::cout << "  L: Carregar Save Manual" << std::endl;
     std::cout << "  Q: Sair" << std::endl;
