@@ -13,11 +13,23 @@
 Game game;
 auto game_start_time = std::chrono::steady_clock::now();
 bool game_initialized = false;
-bool game_paused = false; // Nova variável para controlar pausa
+bool game_paused = false;
+
+// Estados do jogo
+enum GameState {
+    MENU_MAIN,
+    GAME_PLAYING,
+    GAME_PAUSED
+};
+
+GameState current_state = MENU_MAIN;
+int menu_selection = 0; // 0 = Jogar, 1 = Sair
+int pause_selection = 0; // 0 = Continuar, 1 = Reiniciar, 2 = Sair
 
 // Declarações de funções
 void init(void);
 void drawBoard(void);
+void drawGame(void); // Nova função
 void drawNextPiecePanel();
 void drawHoldPanel();
 void drawStatsPanel();
@@ -32,6 +44,9 @@ void transform(int key, int x, int y);
 void quitRestart(unsigned char key, int x, int y);
 void timer(int id);
 void reshape(int width, int height);
+void drawMainMenu();
+void drawPauseMenu();
+void drawControlsPanel();
 
 void init(void)
 {
@@ -43,9 +58,10 @@ void init(void)
 
     Game::loadTextures();
 
-    game.restart();
-    game_start_time = std::chrono::steady_clock::now();
-    game_initialized = true;
+    // Não inicializar o jogo automaticamente
+    // game.restart();
+    // game_start_time = std::chrono::steady_clock::now();
+    // game_initialized = true;
 }
 
 // Função para renderizar texto melhorada
@@ -224,8 +240,8 @@ void drawParticles()
     glEnable(GL_TEXTURE_2D);
 }
 
-// Função principal de renderização
-void drawBoard(void)
+// Nova função para desenhar apenas o jogo (sem gerenciar estados)
+void drawGame()
 {
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0, 0, 1000, 700);
@@ -322,10 +338,11 @@ void drawBoard(void)
     drawNextPiecePanel();
     drawHoldPanel();
     drawStatsPanel();
+    drawControlsPanel();
     drawAchievementNotifications();
 
     // Efeitos especiais (só se não pausado)
-    if (!game_paused)
+    if (current_state == GAME_PLAYING)
     {
         drawParticles();
         drawComboEffects();
@@ -336,43 +353,232 @@ void drawBoard(void)
             drawRecyclingAnimation();
         }
     }
+}
 
-    // Overlay de pausa
-    if (game_paused)
+// Função principal de renderização corrigida
+void drawBoard(void)
+{
+    switch (current_state)
     {
-        // Escurecer tela
-        glDisable(GL_TEXTURE_2D);
-        glColor4f(0.0f, 0.0f, 0.0f, 0.7f);
-        glBegin(GL_QUADS);
-        glVertex2f(0, 0);
-        glVertex2f(25, 0);
-        glVertex2f(25, 20);
-        glVertex2f(0, 20);
-        glEnd();
-
-        // Texto de pausa
-        glColor3f(1.0f, 1.0f, 1.0f);
-        renderText(8.0f, 12.0f, "JOGO PAUSADO", GLUT_BITMAP_HELVETICA_18);
-        renderText(6.5f, 10.5f, "Pressione ESC para continuar", GLUT_BITMAP_HELVETICA_12);
-        
-        // Ícone de pausa
-        glColor3f(0.0f, 1.0f, 0.5f);
-        glLineWidth(4.0f);
-        glBegin(GL_LINES);
-        // Duas barras verticais do símbolo de pausa
-        glVertex2f(11.0f, 8.0f);
-        glVertex2f(11.0f, 6.0f);
-        glVertex2f(12.5f, 8.0f);
-        glVertex2f(12.5f, 6.0f);
-        glEnd();
-        glLineWidth(1.0f);
-        
-        glEnable(GL_TEXTURE_2D);
+        case MENU_MAIN:
+            drawMainMenu();
+            break;
+            
+        case GAME_PLAYING:
+            drawGame();
+            glutSwapBuffers();
+            break;
+            
+        case GAME_PAUSED:
+            // Desenhar o jogo em background (sem recursão)
+            drawGame();
+            
+            // Desenhar menu de pausa sobre o jogo
+            drawPauseMenu();
+            glutSwapBuffers();
+            break;
     }
+}
 
+// Função para desenhar o menu principal
+void drawMainMenu()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_TEXTURE_2D);
+    
+    // Fundo do menu
+    glBegin(GL_QUADS);
+    glColor3f(0.02f, 0.04f, 0.08f);
+    glVertex2f(0, 20);
+    glVertex2f(25, 20);
+    glColor3f(0.01f, 0.02f, 0.04f);
+    glVertex2f(25, 0);
+    glVertex2f(0, 0);
+    glEnd();
+    
+    // Título do jogo
+    glColor3f(0.0f, 1.0f, 0.5f);
+    renderText(6.0f, 16.0f, "ECOTETRIS v2.0", GLUT_BITMAP_TIMES_ROMAN_24);
+    glColor3f(0.0f, 0.8f, 0.4f);
+    renderText(7.5f, 15.0f, "Reciclagem Sustentavel", GLUT_BITMAP_HELVETICA_18);
+    
+    // Opções do menu
+    float menu_y = 12.0f;
+    
+    // Opção Jogar
+    if (menu_selection == 0)
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);
+        renderText(10.0f, menu_y, "> JOGAR <", GLUT_BITMAP_HELVETICA_18);
+    }
+    else
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        renderText(11.0f, menu_y, "JOGAR", GLUT_BITMAP_HELVETICA_18);
+    }
+    
+    menu_y -= 2.0f;
+    
+    // Opção Sair
+    if (menu_selection == 1)
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);
+        renderText(10.5f, menu_y, "> SAIR <", GLUT_BITMAP_HELVETICA_18);
+    }
+    else
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        renderText(11.5f, menu_y, "SAIR", GLUT_BITMAP_HELVETICA_18);
+    }
+    
+    // Instruções
+    glColor3f(0.7f, 0.7f, 0.7f);
+    renderText(7.0f, 7.0f, "Use as setas para navegar", GLUT_BITMAP_HELVETICA_12);
+    renderText(8.0f, 6.0f, "ENTER para selecionar", GLUT_BITMAP_HELVETICA_12);
+    
+    // Créditos/Tema
+    glColor3f(0.0f, 0.6f, 0.3f);
+    renderText(4.0f, 3.0f, "Ajude o planeta separando o lixo corretamente!", GLUT_BITMAP_HELVETICA_12);
+    renderText(6.0f, 2.0f, "Cada tipo de lixo tem sua cor especial", GLUT_BITMAP_HELVETICA_10);
+    
     glutSwapBuffers();
 }
 
+// Função para desenhar o menu de pausa
+void drawPauseMenu()
+{
+    // Escurecer tela
+    glDisable(GL_TEXTURE_2D);
+    glColor4f(0.0f, 0.0f, 0.0f, 0.8f);
+    glBegin(GL_QUADS);
+    glVertex2f(0, 0);
+    glVertex2f(25, 0);
+    glVertex2f(25, 20);
+    glVertex2f(0, 20);
+    glEnd();
+    
+    // Painel do menu
+    glColor4f(0.1f, 0.1f, 0.2f, 0.9f);
+    glBegin(GL_QUADS);
+    glVertex2f(8.0f, 8.0f);
+    glVertex2f(17.0f, 8.0f);
+    glVertex2f(17.0f, 15.0f);
+    glVertex2f(8.0f, 15.0f);
+    glEnd();
+    
+    // Borda do painel
+    glColor3f(0.0f, 1.0f, 0.5f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(8.0f, 8.0f);
+    glVertex2f(17.0f, 8.0f);
+    glVertex2f(17.0f, 15.0f);
+    glVertex2f(8.0f, 15.0f);
+    glEnd();
+    glLineWidth(1.0f);
+    
+    // Título
+    glColor3f(1.0f, 1.0f, 1.0f);
+    renderText(10.5f, 14.0f, "PAUSADO", GLUT_BITMAP_HELVETICA_18);
+    
+    // Opções do menu de pausa
+    float pause_y = 12.5f;
+    
+    // Continuar
+    if (pause_selection == 0)
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);
+        renderText(9.0f, pause_y, "> CONTINUAR <", GLUT_BITMAP_HELVETICA_12);
+    }
+    else
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        renderText(10.0f, pause_y, "CONTINUAR", GLUT_BITMAP_HELVETICA_12);
+    }
+    
+    pause_y -= 1.0f;
+    
+    // Reiniciar
+    if (pause_selection == 1)
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);
+        renderText(9.0f, pause_y, "> REINICIAR <", GLUT_BITMAP_HELVETICA_12);
+    }
+    else
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        renderText(10.0f, pause_y, "REINICIAR", GLUT_BITMAP_HELVETICA_12);
+    }
+    
+    pause_y -= 1.0f;
+    
+    // Sair
+    if (pause_selection == 2)
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);
+        renderText(9.5f, pause_y, "> SAIR <", GLUT_BITMAP_HELVETICA_12);
+    }
+    else
+    {
+        glColor3f(1.0f, 1.0f, 1.0f);
+        renderText(10.5f, pause_y, "SAIR", GLUT_BITMAP_HELVETICA_12);
+    }
+    
+    // Instruções
+    glColor3f(0.7f, 0.7f, 0.7f);
+    renderText(9.0f, 9.0f, "Setas + ENTER", GLUT_BITMAP_8_BY_13);
+}
+
+// Função para desenhar controles na tela
+void drawControlsPanel()
+{
+    glDisable(GL_TEXTURE_2D);
+    
+    // Painel de controles (canto inferior direito)
+    glBegin(GL_QUADS);
+    glColor4f(0.05f, 0.08f, 0.12f, 0.9f);
+    glVertex2f(18.5f, 0.5f);
+    glVertex2f(24.5f, 0.5f);
+    glColor4f(0.02f, 0.04f, 0.08f, 0.9f);
+    glVertex2f(24.5f, 7.5f);
+    glVertex2f(18.5f, 7.5f);
+    glEnd();
+    
+    // Borda
+    glColor3f(0.0f, 0.6f, 0.3f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(18.5f, 0.5f);
+    glVertex2f(24.5f, 0.5f);
+    glVertex2f(24.5f, 7.5f);
+    glVertex2f(18.5f, 7.5f);
+    glEnd();
+    
+    // Título
+    glColor3f(0.0f, 1.0f, 0.5f);
+    renderText(19.0f, 7.0f, "CONTROLES", GLUT_BITMAP_HELVETICA_12);
+    
+    glColor3f(1.0f, 1.0f, 1.0f);
+    float y = 6.3f;
+    
+    renderText(19.0f, y, "(up) - Rotacionar", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "<- -> - Mover", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "(down) - Acelerar", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "Espaco - Drop", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "C - Hold", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "ESC - Pausar", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "R - Reiniciar", GLUT_BITMAP_8_BY_13);
+    y -= 0.4f;
+    renderText(19.0f, y, "Q - Sair", GLUT_BITMAP_8_BY_13);
+    
+    glEnable(GL_TEXTURE_2D);
+}
 void drawNextPiecePanel()
 {
     glDisable(GL_TEXTURE_2D);
@@ -399,7 +605,7 @@ void drawNextPiecePanel()
     glLineWidth(1.0f);
 
     // Título
-    glColor3f(1.0f, 1.0f, 1.0f);
+    glColor3f(1.0f, 1.0f,1.0f);
     renderText(13.0f, 19.0f, "PROXIMA", GLUT_BITMAP_HELVETICA_12);
 
     glEnable(GL_TEXTURE_2D);
@@ -764,143 +970,215 @@ void drawRecyclingAnimation()
     glEnable(GL_TEXTURE_2D);
 }
 
-// Controles de teclado melhorados
+// Controles de teclado atualizados
 void transform(int key, int x, int y)
 {
-    if (game.getGameOver())
-        return;
-
-    switch (key)
+    switch (current_state)
     {
-    case GLUT_KEY_UP:
-        game.rotate();
-        glutPostRedisplay();
-        break;
-    case GLUT_KEY_LEFT:
-        game.translate(-1);
-        glutPostRedisplay();
-        break;
-    case GLUT_KEY_RIGHT:
-        game.translate(1);
-        glutPostRedisplay();
-        break;
-    case GLUT_KEY_DOWN:
-        game.moveDown();
-        glutPostRedisplay();
-        break;
+        case MENU_MAIN:
+            switch (key)
+            {
+                case GLUT_KEY_UP:
+                    menu_selection = (menu_selection - 1 + 2) % 2;
+                    glutPostRedisplay();
+                    break;
+                case GLUT_KEY_DOWN:
+                    menu_selection = (menu_selection + 1) % 2;
+                    glutPostRedisplay();
+                    break;
+            }
+            break;
+            
+        case GAME_PLAYING:
+            if (game.getGameOver())
+                return;
+
+            switch (key)
+            {
+            case GLUT_KEY_UP:
+                game.rotate();
+                glutPostRedisplay();
+                break;
+            case GLUT_KEY_LEFT:
+                game.translate(-1);
+                glutPostRedisplay();
+                break;
+            case GLUT_KEY_RIGHT:
+                game.translate(1);
+                glutPostRedisplay();
+                break;
+            case GLUT_KEY_DOWN:
+                game.moveDown();
+                glutPostRedisplay();
+                break;
+            }
+            break;
+            
+        case GAME_PAUSED:
+            switch (key)
+            {
+                case GLUT_KEY_UP:
+                    pause_selection = (pause_selection - 1 + 3) % 3;
+                    glutPostRedisplay();
+                    break;
+                case GLUT_KEY_DOWN:
+                    pause_selection = (pause_selection + 1) % 3;
+                    glutPostRedisplay();
+                    break;
+            }
+            break;
     }
 }
 
 void quitRestart(unsigned char key, int x, int y)
 {
-    switch (key)
+    switch (current_state)
     {
-    case 'q':
-    case 'Q':
-    {
-        auto now = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - game_start_time);
-        exit(0);
-    }
-    break;
-
-    case 'r':
-    case 'R':
-    {
-        game.restart();
-        game_start_time = std::chrono::steady_clock::now();
-        glutPostRedisplay();
-    }
-    break;
-
-    case 'c':
-    case 'C':
-    {
-        if (!game.getGameOver())
-        {
-            game.holdPiece();
-            glutPostRedisplay();
-        }
-    }
-    break;
-
-    case ' ': // Barra de espaço para drop rápido
-    {
-        if (!game.getGameOver())
-        {
-            while (!game.getGameOver() && !game.isLineClearing())
+        case MENU_MAIN:
+            switch (key)
             {
-                if (game.checkCollision(game.getCurrentX(), game.getCurrentY() - 1, game.getCurrentRotation()))
-                {
+                case '\r': // ENTER
+                case '\n':
+                    if (menu_selection == 0) // Jogar
+                    {
+                        current_state = GAME_PLAYING;
+                        game.restart();
+                        game_start_time = std::chrono::steady_clock::now();
+                        game_initialized = true;
+                    }
+                    else if (menu_selection == 1) // Sair
+                    {
+                        exit(0);
+                    }
+                    glutPostRedisplay();
                     break;
-                }
-                game.moveDown();
+                case 27: // ESC
+                    exit(0);
+                    break;
             }
-            glutPostRedisplay();
-        }
-    }
-    break;
+            break;
+            
+        case GAME_PLAYING:
+            switch (key)
+            {
+            case 'q':
+            case 'Q':
+                current_state = MENU_MAIN;
+                menu_selection = 0;
+                glutPostRedisplay();
+                break;
 
-    case 27: // ESC - Pausar
-    {
-        if (!game.getGameOver()) // Só permite pausar se o jogo não acabou
-        {
-            game_paused = !game_paused; // Alterna entre pausado e não pausado
-            if (game_paused)
-            {
-                std::cout << "Jogo pausado. Pressione ESC novamente para continuar." << std::endl;
+            case 'r':
+            case 'R':
+                game.restart();
+                game_start_time = std::chrono::steady_clock::now();
+                glutPostRedisplay();
+                break;
+
+            case 'c':
+            case 'C':
+                if (!game.getGameOver())
+                {
+                    game.holdPiece();
+                    glutPostRedisplay();
+                }
+                break;
+
+            case ' ': // Barra de espaço para drop rápido
+                if (!game.getGameOver())
+                {
+                    while (!game.getGameOver() && !game.isLineClearing())
+                    {
+                        if (game.checkCollision(game.getCurrentX(), game.getCurrentY() - 1, game.getCurrentRotation()))
+                        {
+                            break;
+                        }
+                        game.moveDown();
+                    }
+                    glutPostRedisplay();
+                }
+                break;
+
+            case 27: // ESC - Pausar
+                if (!game.getGameOver())
+                {
+                    current_state = GAME_PAUSED;
+                    pause_selection = 0;
+                    glutPostRedisplay();
+                }
+                break;
             }
-            else
+            break;
+            
+        case GAME_PAUSED:
+            switch (key)
             {
-                std::cout << "Jogo despausado." << std::endl;
+                case '\r': // ENTER
+                case '\n':
+                    switch (pause_selection)
+                    {
+                        case 0: // Continuar
+                            current_state = GAME_PLAYING;
+                            break;
+                        case 1: // Reiniciar
+                            current_state = GAME_PLAYING;
+                            game.restart();
+                            game_start_time = std::chrono::steady_clock::now();
+                            break;
+                        case 2: // Sair
+                            current_state = MENU_MAIN;
+                            menu_selection = 0;
+                            break;
+                    }
+                    glutPostRedisplay();
+                    break;
+                case 27: // ESC - Voltar ao jogo
+                    current_state = GAME_PLAYING;
+                    glutPostRedisplay();
+                    break;
             }
-        }
-        glutPostRedisplay();
-    }
-    break;
+            break;
     }
 }
 
-// Timer melhorado com controle de FPS
+// Timer atualizado
 void timer(int id)
 {
-    static auto last_time = std::chrono::steady_clock::now();
-    auto current_time = std::chrono::steady_clock::now();
-    auto delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_time);
-
-    // Só atualizar sistemas se não estiver pausado
-    if (!game_paused)
+    // Só executar lógica do jogo se estiver jogando
+    if (current_state == GAME_PLAYING)
     {
+        static auto last_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::steady_clock::now();
+        auto delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_time);
+
         game.update();
-    }
 
-    // Lógica do jogo
-    if (game_initialized && !game_paused) // Só executar lógica se não estiver pausado
-    {
-        if (game.getGameOver())
+        if (game_initialized)
         {
-            // Game over logic
-            game_initialized = false;
-        }
-        else
-        {
-            // Movimento automático baseado no nível
-            static int drop_counter = 0;
-            int drop_interval = (int)(30 * game.getDifficultyMultiplier()); // 30 frames base
-
-            drop_counter++;
-            if (drop_counter >= drop_interval)
+            if (game.getGameOver())
             {
-                game.moveDown();
-                drop_counter = 0;
+                game_initialized = false;
+            }
+            else
+            {
+                // Movimento automático baseado no nível
+                static int drop_counter = 0;
+                int drop_interval = (int)(30 * game.getDifficultyMultiplier());
+
+                drop_counter++;
+                if (drop_counter >= drop_interval)
+                {
+                    game.moveDown();
+                    drop_counter = 0;
+                }
             }
         }
+
+        last_time = current_time;
     }
 
     glutPostRedisplay();
-
-    last_time = current_time;
-    glutTimerFunc(16, timer, id + 1); // ~60 FPS
+    glutTimerFunc(16, timer, id + 1);
 }
 
 // Função para redimensionamento da janela
@@ -921,7 +1199,7 @@ int main(int argc, char **argv)
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_ALPHA);
     glutInitWindowPosition(100, 50);
     glutInitWindowSize(1000, 700);
-    glutCreateWindow("EcoTetris - Reciclagem Sustentavel v2.0");
+    glutCreateWindow("EcoTetris - Reciclagem Sustentavel");
 
     init();
 
@@ -931,17 +1209,11 @@ int main(int argc, char **argv)
     glutReshapeFunc(reshape);
     glutTimerFunc(16, timer, 0);
 
-    // Mensagem de boas-vindas
+    // Mensagem de boas-vindas atualizada
     std::cout << "=== EcoTetris v2.0 - Reciclagem Sustentavel ===" << std::endl;
-    std::cout << "Controles:" << std::endl;
-    std::cout << "  Setas: Mover e Rotacionar" << std::endl;
-    std::cout << "  Espaco: Drop Rapido" << std::endl;
-    std::cout << "  C: Hold (Guardar Peca)" << std::endl;
-    std::cout << "  ESC: Pausar" << std::endl;
-    std::cout << "  S: Salvar Manualmente" << std::endl;
-    std::cout << "  L: Carregar Save Manual" << std::endl;
-    std::cout << "  Q: Sair" << std::endl;
-    std::cout << "  R: Reiniciar" << std::endl;
+    std::cout << "Bem-vindo ao EcoTetris!" << std::endl;
+    std::cout << "Use o menu para navegar pelas opções." << std::endl;
+    std::cout << "Os controles aparecem na tela durante o jogo." << std::endl;
     std::cout << "=============================================" << std::endl;
 
     glutMainLoop();
