@@ -120,7 +120,7 @@ void Game::restart(){
     particles.clear();
     
     generateNextPiece();
-    spawnFruits();
+    spawnTrashes();
 }
 
 bool Game::getGameOver() const {
@@ -158,7 +158,7 @@ void Game::setCurrent(int x, int y){
     clearPreviousFrame();
     curr_x = x;
     curr_y = y;
-    updateActiveFruits();
+    updateActiveTrashes();
 }
 
 void Game::generateNextPiece() {
@@ -169,7 +169,7 @@ void Game::generateNextPiece() {
     }
 }
 
-void Game::spawnFruits(){
+void Game::spawnTrashes(){
     if (line_clearing) return;
     
     // Usar a próxima peça gerada
@@ -182,7 +182,7 @@ void Game::spawnFruits(){
     generateNextPiece();
     
     int rotation = rand() % 4;
-    int position = (rand() % 5) + 2; 
+    int position = (rand() % 5) + 2;
     
     curr_rotation = rotation;
     if(checkCollision(position, 17, rotation)){
@@ -192,7 +192,7 @@ void Game::spawnFruits(){
         curr_x = position;
         curr_y = 17;
         can_hold = true; // Permite usar hold novamente
-        updateActiveFruits();
+        updateActiveTrashes();
     }
 }
 
@@ -207,7 +207,7 @@ void Game::holdPiece() {
         for(int i = 0; i < 4; i++){
             hold_trash_types[i] = curr_trash_types[i];
         }
-        spawnFruits();
+        spawnTrashes();
     } else {
         // Trocar peça atual com a guardada
         int temp_shape = hold_shape;
@@ -234,7 +234,7 @@ void Game::holdPiece() {
         if(checkCollision(curr_x, curr_y, curr_rotation)){
             game_over = true;
         } else {
-            updateActiveFruits();
+            updateActiveTrashes();
         }
     }
     
@@ -252,7 +252,7 @@ void Game::rotate(){
     if(!(checkCollision(curr_x, curr_y, rotation))){
         clearPreviousFrame();
         curr_rotation = rotation;
-        updateActiveFruits();
+        updateActiveTrashes();
     }
 }
 
@@ -261,7 +261,7 @@ void Game::translate(int direction){
     if(!(checkCollision(new_x, curr_y, curr_rotation))){
         clearPreviousFrame();
         curr_x = new_x;
-        updateActiveFruits();
+        updateActiveTrashes();
     }
 }
 
@@ -274,12 +274,12 @@ void Game::moveDown(){
     if(!(checkCollision(curr_x, curr_y - 1, curr_rotation))){
         clearPreviousFrame();
         curr_y -= 1;
-        updateActiveFruits();
+        updateActiveTrashes(); 
     }
     else{
-        freezeCurrent();
-        clearLines();
-        spawnFruits();
+        freezeCurrent(); // Congela a peça atual
+        clearLines(); // Verifica e limpa linhas
+        spawnTrashes(); // Gera uma nova peça
     }
 }
 
@@ -287,10 +287,7 @@ void Game::freezeCurrent(){
     board[curr_x][curr_y].isOccupied = true;
     board[curr_x][curr_y].isCurrent = false;
     board[curr_x][curr_y].trash_type = curr_trash_types[0];
-    board[curr_x][curr_y].red = colors[curr_trash_types[0]][0];
-    board[curr_x][curr_y].green = colors[curr_trash_types[0]][1];
-    board[curr_x][curr_y].blue = colors[curr_trash_types[0]][2];
-    
+
     int k = 1;
     for(int i = 1; i < 6; i+=2){
         int new_x = curr_x + shapes[curr_shape][curr_rotation][i-1];
@@ -299,9 +296,7 @@ void Game::freezeCurrent(){
         board[new_x][new_y].isOccupied = true;
         board[new_x][new_y].isCurrent = false;
         board[new_x][new_y].trash_type = curr_trash_types[k];
-        board[new_x][new_y].red = colors[curr_trash_types[k]][0];
-        board[new_x][new_y].green = colors[curr_trash_types[k]][1];
-        board[new_x][new_y].blue = colors[curr_trash_types[k]][2];
+
         k++;
     }
 }
@@ -317,7 +312,7 @@ void Game::checkMultipleLines() {
     std::vector<TrashType> line_types;
     
     for(int y = 0; y < 20; y++){
-        bool full = true;
+        bool full = true; // Verifica se a linha está cheia
         for(int x = 0; x < 10; x++){
             if(!(board[x][y].isOccupied)){
                 full = false;
@@ -399,9 +394,6 @@ void Game::deleteRow(int y){
             board[x][k].isOccupied = board[x][k+1].isOccupied;
             board[x][k].isCurrent = board[x][k+1].isCurrent;
             board[x][k].trash_type = board[x][k+1].trash_type;
-            board[x][k].red = board[x][k+1].red;
-            board[x][k].green = board[x][k+1].green;
-            board[x][k].blue = board[x][k+1].blue;
             board[x][k].combo_id = board[x][k+1].combo_id;
         }
     }
@@ -448,14 +440,12 @@ bool Game::checkCollision(int x, int y, int rotation){
     return false;
 }
 
-void Game::updateActiveFruits(){
+void Game::updateActiveTrashes(){
     if(curr_x >= 0 && curr_x < 10 && curr_y >= 0 && curr_y < 20){
         board[curr_x][curr_y].isCurrent = true;
         if(!board[curr_x][curr_y].isOccupied){
             board[curr_x][curr_y].trash_type = curr_trash_types[0];
-            board[curr_x][curr_y].red = colors[curr_trash_types[0]][0];
-            board[curr_x][curr_y].green = colors[curr_trash_types[0]][1];
-            board[curr_x][curr_y].blue = colors[curr_trash_types[0]][2];
+
         }
     }
     
@@ -468,48 +458,16 @@ void Game::updateActiveFruits(){
             board[new_x][new_y].isCurrent = true;
             if(!board[new_x][new_y].isOccupied){
                 board[new_x][new_y].trash_type = curr_trash_types[k];
-                board[new_x][new_y].red = colors[curr_trash_types[k]][0];
-                board[new_x][new_y].green = colors[curr_trash_types[k]][1];
-                board[new_x][new_y].blue = colors[curr_trash_types[k]][2];
             }
         }
         k++;
     }
 }
 
-void Game::deleteFruit(int x1, int y1, int x2, int y2, int x3, int y3){
-    if(x1 == x2){
-        for(int k = y1; k>3; k--){
-            shiftColumn(x1, k, 3);
-        }
-    }
-    else{
-        for(int k = y1; k>0; k--){
-            shiftColumn(x1, k, 1);
-        }
-        for(int k = y2; k>0; k--){
-            shiftColumn(x2, k, 1);
-        }
-        for(int k = y3; k>0; k--){
-            shiftColumn(x3, k, 1);
-        }
-    }
-}
-
-void Game::shiftColumn(int x, int k, int diff){
-    board[x][k].isOccupied = board[x][k-diff].isOccupied;
-    board[x][k].isCurrent = board[x][k-diff].isCurrent;
-    board[x][k].trash_type = board[x][k-diff].trash_type;
-    board[x][k].red = board[x][k-diff].red;
-    board[x][k].green = board[x][k-diff].green;
-    board[x][k].blue = board[x][k-diff].blue;
-    board[x][k].combo_id = board[x][k-diff].combo_id;
-}
-
-void Game::dropFruit(){
+void Game::dropTrashes(){
     if(!(checkCollision(curr_x, curr_y, curr_rotation))){
         freezeCurrent();
-        spawnFruits();
+        spawnTrashes();
     }
     else{
         game_over = true;
@@ -686,7 +644,7 @@ void Game::update() {
     updateParticles();
 }
 
-// Métodos adicionais para save/load system
+// save/load system
 void Game::setCell(int x, int y, bool occupied, TrashType type, float r, float g, float b) {
     if (x >= 0 && x < 10 && y >= 0 && y < 20) {
         board[x][y].isOccupied = occupied;
@@ -722,7 +680,7 @@ void Game::setHoldPiece(int shape, TrashType types[4], bool can_hold_flag) {
     can_hold = can_hold_flag;
 }
 
-// Implementações vazias para métodos não utilizados
+// métodos não utilizados
 void Game::checkFruits() {}
 void Game::checkFruit(int x, int y) {}
 TrashType Game::getTrashTypeFromColor(float r, float g, float b) { return PAPER; }

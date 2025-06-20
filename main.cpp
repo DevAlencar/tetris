@@ -41,7 +41,7 @@ void drawRecycleBin(float x, float y, float r, float g, float b, float scale = 1
 void drawParticles();
 void renderText(float x, float y, const std::string &text, void *font = GLUT_BITMAP_HELVETICA_12);
 void transform(int key, int x, int y);
-void quitRestart(unsigned char key, int x, int y);
+void options(unsigned char key, int x, int y);
 void timer(int id);
 void reshape(int width, int height);
 void drawMainMenu();
@@ -58,10 +58,6 @@ void init(void)
 
     Game::loadTextures();
 
-    // Não inicializar o jogo automaticamente
-    // game.restart();
-    // game_start_time = std::chrono::steady_clock::now();
-    // game_initialized = true;
 }
 
 // Função para renderizar texto melhorada
@@ -142,7 +138,7 @@ void drawRecycleBin(float x, float y, float r, float g, float b, float scale, bo
 
     // Sombra projetada
     glColor4f(0.0f, 0.0f, 0.0f, 0.4f);
-    glBegin(GL_POLYGON); // Substituído GL_ELLIPSE por GL_POLYGON
+    glBegin(GL_POLYGON); 
     for (int i = 0; i < 20; i++)
     {
         float angle = i * 2.0f * 3.14159f / 20.0f;
@@ -276,7 +272,7 @@ void drawGame()
                     TrashType type = game.getTrashType(x, y);
                     if (type != NONE)
                     {
-                        drawTexturedBlock(x, y, type, 1.0f, true);
+                        drawTexturedBlock(x, y, type, 1.0f, true); 
                     }
                 }
             }
@@ -370,7 +366,6 @@ void drawBoard(void)
             break;
             
         case GAME_PAUSED:
-            // Desenhar o jogo em background (sem recursão)
             drawGame();
             
             // Desenhar menu de pausa sobre o jogo
@@ -398,7 +393,7 @@ void drawMainMenu()
     
     // Título do jogo
     glColor3f(0.0f, 1.0f, 0.5f);
-    renderText(6.0f, 16.0f, "ECOTETRIS v2.0", GLUT_BITMAP_TIMES_ROMAN_24);
+    renderText(6.0f, 16.0f, "ECOTETRIS", GLUT_BITMAP_TIMES_ROMAN_24);
     glColor3f(0.0f, 0.8f, 0.4f);
     renderText(7.5f, 15.0f, "Reciclagem Sustentavel", GLUT_BITMAP_HELVETICA_18);
     
@@ -1030,7 +1025,7 @@ void transform(int key, int x, int y)
     }
 }
 
-void quitRestart(unsigned char key, int x, int y)
+void options(unsigned char key, int x, int y)
 {
     switch (current_state)
     {
@@ -1205,12 +1200,12 @@ int main(int argc, char **argv)
 
     glutDisplayFunc(drawBoard);
     glutSpecialFunc(transform);
-    glutKeyboardFunc(quitRestart);
+    glutKeyboardFunc(options);
     glutReshapeFunc(reshape);
     glutTimerFunc(16, timer, 0);
 
     // Mensagem de boas-vindas atualizada
-    std::cout << "=== EcoTetris v2.0 - Reciclagem Sustentavel ===" << std::endl;
+    std::cout << "=== EcoTetris - Reciclagem Sustentavel ===" << std::endl;
     std::cout << "Bem-vindo ao EcoTetris!" << std::endl;
     std::cout << "Use o menu para navegar pelas opções." << std::endl;
     std::cout << "Os controles aparecem na tela durante o jogo." << std::endl;

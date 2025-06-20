@@ -4,6 +4,17 @@ Bem-vindo ao **EcoTetris v2.0**, um jogo de Tetris com temática de **reciclagem
 
 ---
 
+
+## Compilação:
+```bash
+g++ main.cpp game.cpp -o Tetris -lglut -lGLU -lGL -lstdc++
+```
+
+Depois basta executar:
+```bash
+./Tetris
+```
+
 ## 🎮 Controles do Jogo
 
 | Tecla        | Ação                        |

@@ -5,11 +5,8 @@
 #include <GL/glut.h>
 #include <string>
 
-//////////////////////////////////////////////
-// Classe Space - Representa uma célula do tabuleiro
-//////////////////////////////////////////////
 
-// Enumeração dos tipos de lixo para reciclagem
+// Enum dos tipos de lixo para reciclagem
 enum TrashType {PAPER, PLASTIC, METAL, GLASS, ORGANIC, NONE};
 
 class Space{
@@ -23,15 +20,12 @@ class Space{
         int combo_id = -1; // ID para identificar combos
 };
 
-// Enumeração das cores disponíveis para as peças (agora representam tipos de lixo)
+// Enum das cores disponíveis para as peças
 enum Color {paper, plastic, metal, glass, organic};
 
 // Definição de todas as peças (tetrominos) e suas rotações
 extern const int shapes[7][4][6];
 
-//////////////////////////////////////////////
-// Struct para efeitos de partículas
-//////////////////////////////////////////////
 struct Particle {
     float x, y;
     float vx, vy;
@@ -40,15 +34,11 @@ struct Particle {
     TrashType type;
 };
 
-//////////////////////////////////////////////
-// Classe Game - Gerencia a lógica principal do jogo
-//////////////////////////////////////////////
 class Game{
     public:
         Game();
         ~Game();
 
-        // Métodos existentes
         std::vector< std::vector<Space> > getBoard();
         bool getGameOver() const;
         bool getOccupied(int x, int y) const;
@@ -58,33 +48,32 @@ class Game{
         float getBlue(int x, int y) const;
         TrashType getTrashType(int x, int y) const;
         
-        void spawnFruits();
+        void spawnTrashes();
         void rotate();
         void translate(int direction);
         void moveDown();
         void setCurrent(int x, int y);
-        void dropFruit();
+        void dropTrashes();
         void restart();
         void update(); // Novo: atualiza partículas e efeitos
 
-        // Métodos para o sistema de animação de reciclagem
+        // sistema de animação de reciclagem
         bool isLineClearing() const { return line_clearing; }
         int getAnimationStep() const { return animation_step; }
         int getLineBeingCleared() const { return line_being_cleared; }
         TrashType getLineTrashType() const { return line_trash_type; }
         
-        // Métodos para texturas
+        // texturas
         static void loadTextures();
         static void bindTexture(TrashType type);
         
-        // Métodos adicionais para integração completa
         int getCurrentShape() const { return curr_shape; }
         int getCurrentRotation() const { return curr_rotation; }
         int getCurrentX() const { return curr_x; }
         int getCurrentY() const { return curr_y; }
         TrashType* getCurrentTrashTypes() const { return const_cast<TrashType*>(curr_trash_types); }
         
-        // Métodos para save/load system
+        // save/load system
         void setScore(int s) { score = s; }
         void setLevel(int l) { level = l; }
         void setLinesCleared(int lc) { lines_cleared = lc; }
@@ -96,10 +85,10 @@ class Game{
         void setHoldPiece(int shape, TrashType types[4], bool can_hold_flag);
         void setGameOver(bool go) { game_over = go; }
         
-        // Método para verificar colisão externamente
+        // verificar colisão externamente
         bool checkCollision(int x, int y, int rotation);
         
-        // Novos métodos para sistema de pontuação e níveis
+        // sistema de pontuação e níveis
         int getScore() const { return score; }
         int getLevel() const { return level; }
         int getLinesCleared() const { return lines_cleared; }
@@ -124,7 +113,7 @@ class Game{
         std::vector<Particle>& getParticles() { return particles; }
         void createRecycleEffect(int x, int y, TrashType type);
         
-        // Método getRGB público
+        
         float getRGB(Color color, int RGB) const;
         
     private:
@@ -163,8 +152,7 @@ class Game{
         static GLuint texture_ids[5];
         static bool textures_loaded;
         
-        // Métodos existentes
-        void updateActiveFruits();
+        void updateActiveTrashes();
         void clearPreviousFrame();
         void freezeCurrent();
         void clearLines();
@@ -172,17 +160,17 @@ class Game{
         void deleteRow(int y);
         void checkFruits();
         void checkFruit(int x, int y);
-        void deleteFruit(int x1, int y1, int x2, int y2, int x3, int y3);
+        void deleteTrashes(int x1, int y1, int x2, int y2, int x3, int y3);
         void shiftColumn(int x, int k, int diff);
         
-        // Métodos para reciclagem melhorados
+        // reciclagem
         bool isUniformLine(int y, TrashType &type);
         void advanceLineAnimation();
         void initLineAnimation(int y, TrashType type);
         TrashType getTrashTypeFromColor(float r, float g, float b);
         void checkMultipleLines(); // Novo: verifica múltiplas linhas simultâneas
         
-        // Novos métodos para sistema de pontuação
+        // sistema de pontuação
         void updateScore(int lines_cleared, TrashType type, bool is_combo);
         void updateLevel();
         void generateNextPiece();
